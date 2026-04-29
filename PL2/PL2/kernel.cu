@@ -1,4 +1,4 @@
-﻿﻿// PARADIGMAS AVANZADOS DE PROGRAMACION - PL1
+﻿// PARADIGMAS AVANZADOS DE PROGRAMACION - PL1
 // Manipulacion de datos de vuelos con CUDA
 // Universidad de Alcala - Curso 2025/2026
 
@@ -13,83 +13,52 @@
 #include <string>
 #include <unordered_map>
 #include <algorithm>
-#include <windows.h>
-#include <winhttp.h>
-#include <time.h>
 
-#define HOST_CLOUD L"pl2api-miguel-crfxf2cqd3f3gfa4.spaincentral-01.azurewebsites.net/api/guardar"
-#define PATH_CLOUD L"/api/guardar"
+// URL de la Azure Function
+#define URL_CLOUD "https://pl2api-miguel-crfxf2cqd3f3gfa4.spaincentral-01.azurewebsites.net/api/guardar"
 
+// ============================================================
+// FUNCIONES DE ENVIO AL CLOUD
+// Usamos system() + curl (ya viene instalado en Windows 10/11)
+// sin necesidad de librerias externas
+// ============================================================
 void enviar_al_cloud(const char* fase, const char* parametros, const char* resultado) {
     char usuario[100];
-    printf("\nIntroduzca su nombre de usuario para el registro: ");
+    printf("\nIntroduce tu nombre de usuario para el registro: ");
     scanf("%99s", usuario);
     while (getchar() != '\n');
 
-    // Timestamp
     time_t ahora = time(NULL);
     char timestamp[30];
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%S", localtime(&ahora));
 
-    // JSON a enviar
-    char json[1024];
-    snprintf(json, sizeof(json),
-        "{\"fase\":\"%s\",\"usuario\":\"%s\",\"parametros\":\"%s\",\"resultado\":\"%s\",\"timestamp\":\"%s\"}",
-        fase, usuario, parametros, resultado, timestamp);
+    char cmd[2048];
+    snprintf(cmd, sizeof(cmd),
+        "curl -s -X POST \"%s\" "
+        "-H \"Content-Type: application/json\" "
+        "-o NUL "
+        "-d \"{\\\"fase\\\":\\\"%s\\\","
+        "\\\"usuario\\\":\\\"%s\\\","
+        "\\\"parametros\\\":\\\"%s\\\","
+        "\\\"resultado\\\":\\\"%s\\\","
+        "\\\"timestamp\\\":\\\"%s\\\"}\"",
+        URL_CLOUD, fase, usuario, parametros, resultado, timestamp);
 
-    // Abrir sesión WinHTTP
-    HINTERNET hSession = WinHttpOpen(L"PL2/1.0",
-        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-        WINHTTP_NO_PROXY_NAME,
-        WINHTTP_NO_PROXY_BYPASS, 0);
-
-    if (!hSession) { printf("Error al abrir sesion\n"); return; }
-
-    HINTERNET hConnect = WinHttpConnect(hSession, HOST_CLOUD,
-        INTERNET_DEFAULT_HTTPS_PORT, 0);
-
-    if (!hConnect) { printf("Error al conectar\n"); WinHttpCloseHandle(hSession); return; }
-
-    HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"POST", PATH_CLOUD,
-        NULL, WINHTTP_NO_REFERER,
-        WINHTTP_DEFAULT_ACCEPT_TYPES,
-        WINHTTP_FLAG_SECURE); // HTTPS
-
-    if (!hRequest) { printf("Error al crear peticion de Cloud\n"); WinHttpCloseHandle(hConnect); WinHttpCloseHandle(hSession); return; }
-
-    // Cabecera Content-Type
-    WinHttpAddRequestHeaders(hRequest,
-        L"Content-Type: application/json",
-        (ULONG)-1L,
-        WINHTTP_ADDREQ_FLAG_ADD);
-
-    // Enviar
-    BOOL ok = WinHttpSendRequest(hRequest,
-        WINHTTP_NO_ADDITIONAL_HEADERS, 0,
-        (LPVOID)json, (DWORD)strlen(json),
-        (DWORD)strlen(json), 0);
-
-    if (ok) WinHttpReceiveResponse(hRequest, NULL);
-
-    if (ok)
-        printf("Datos enviados correctamente.\n");
+    int ret = system(cmd);
+    if (ret == 0)
+        printf("[\nDatos enviados correctamente.\n");
     else
-        printf("Error al enviar los datos.\n");
-
-    WinHttpCloseHandle(hRequest);
-    WinHttpCloseHandle(hConnect);
-    WinHttpCloseHandle(hSession);
+        printf("[\nError al enviar los datos.\n");
 }
 
 void preguntar_envio_cloud(const char* fase, const char* parametros, const char* resultado) {
     char resp;
-    printf("\n¿Desea enviar los resultados al Cloud? (s/n): ");
+    printf("\nDesea enviar los resultados al Cloud? (s/n): ");
     scanf(" %c", &resp);
     while (getchar() != '\n');
     if (resp == 's' || resp == 'S')
         enviar_al_cloud(fase, parametros, resultado);
 }
-
 // Lo necesitamos para la segunda fase
 __constant__ int c_umbral;
 
@@ -837,7 +806,7 @@ void fase04_histograma_aeropuertos() {
 // ============================================================
 int main() {
     char ruta[1024];
-    const char* ruta_defecto = "C:\\Users\\manuel.galindol\\Desktop\\miguel\\data\\Airline_dataset.csv";
+    const char* ruta_defecto = "C:\\Users\\miguel.lujan\\Downloads\\Airline_dataset.csv";
 
     // bucle hasta que se cargue un dataset valido
     int cargado = 0;

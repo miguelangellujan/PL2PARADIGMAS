@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>PL2: Visor de Resultados</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #000000;
+            color: #6d6969;
+            min-height: 100vh;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 8px;
+            color: #60a5fa;
+        }
+
+        .subtitulo {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+
+        .controles {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        input, select {
+            background: #1e2130;
+            border: 1px solid #374151;
+            color: #e0e0e0;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        input { flex: 1; min-width: 200px; }
+
+        input:focus { border-color: #60a5fa; }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        button:hover { background: #1d4ed8; }
+
+        .stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: #1e2130;
+            border: 1px solid #374151;
+            border-radius: 10px;
+            padding: 14px 20px;
+            flex: 1;
+            min-width: 140px;
+            text-align: center;
+        }
+
+        .stat-card .numero {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #60a5fa;
+        }
+
+        .stat-card .etiqueta {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .tabla-contenedor {
+            background: #1e2130;
+            border-radius: 12px;
+            border: 1px solid #374151;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #162032;
+        }
+
+        th {
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 0.85rem;
+            color: #60a5fa;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th:hover { color: #93c5fd; }
+
+        td {
+            padding: 12px 16px;
+            font-size: 0.88rem;
+            border-top: 1px solid #374151;
+        }
+
+        tr:hover td { background: #252a3a; }
+
+        .badge {
+            background: #1e3a5f;
+            color: #60a5fa;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+
+        .cargando {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .sin-datos {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .actualizar-info {
+            text-align: right;
+            font-size: 0.78rem;
+            color: #4b5563;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>PL2: Visor de Resultados</h1>
+    <p class="subtitulo">Paradigmas Avanzados de Programación</p>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="numero" id="stat-total">-</div>
+            <div class="etiqueta">Total registros</div>
+        </div>
+        <div class="stat-card">
+            <div class="numero" id="stat-usuarios">-</div>
+            <div class="etiqueta">Usuarios distintos</div>
+        </div>
+        <div class="stat-card">
+            <div class="numero" id="stat-fases">-</div>
+            <div class="etiqueta">Fases ejecutadas</div>
+        </div>
+    </div>
+
+    <div class="controles">
+        <input type="text" id="buscar" placeholder="Filtrar por usuario, fase o resultado..." oninput="filtrar()">
+        <select id="filtro-fase" onchange="filtrar()">
+            <option value="">Todas las fases</option>
+            <option value="Fase01">Fase 1 – Despegues</option>
+            <option value="Fase02">Fase 2 – Aterrizajes</option>
+            <option value="Fase03">Fase 3 – Reducción</option>
+            <option value="Fase04">Fase 4 – Histograma</option>
+        </select>
+        <button onclick="cargar()">Actualizar</button>
+    </div>
+
+    <div class="actualizar-info" id="ultima-actualizacion"></div>
+
+    <div class="tabla-contenedor">
+        <table>
+            <thead>
+                <tr>
+                    <th onclick="ordenar('timestamp')">Fecha y hora</th>
+                    <th onclick="ordenar('usuario')">Usuario</th>
+                    <th onclick="ordenar('fase')">Fase</th>
+                    <th onclick="ordenar('parametros')">Parámetros</th>
+                    <th onclick="ordenar('resultado')">Resultado </th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo">
+                <tr><td colspan="5" class="cargando">Cargando datos...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const API = "https://pl2api-miguel-crfxf2cqd3f3gfa4.spaincentral-01.azurewebsites.net/api/guardar";
+
+        let datos = [];
+        let ordenAscendente = true;
+        let campoOrden = 'timestamp';
+
+        async function cargar() {
+            document.getElementById("cuerpo").innerHTML =
+                '<tr><td colspan="5" class="cargando">Cargando...</td></tr>';
+            try {
+                const res = await fetch(API);
+                datos = await res.json();
+                actualizarStats(datos);
+                filtrar();
+                const ahora = new Date().toLocaleString('es-ES');
+                document.getElementById("ultima-actualizacion").textContent =
+                    "Última actualización: " + ahora;
+            } catch (e) {
+                document.getElementById("cuerpo").innerHTML =
+                    '<tr><td colspan="5" class="sin-datos">Error al conectar con la API</td></tr>';
+            }
+        }
+
+        function actualizarStats(filas) {
+            document.getElementById("stat-total").textContent = filas.length;
+            const usuarios = new Set(filas.map(f => f.usuario)).size;
+            document.getElementById("stat-usuarios").textContent = usuarios;
+            const fases = new Set(filas.map(f => f.fase)).size;
+            document.getElementById("stat-fases").textContent = fases;
+        }
+
+        function filtrar() {
+            const q = document.getElementById("buscar").value.toLowerCase();
+            const fase = document.getElementById("filtro-fase").value.toLowerCase();
+
+            let filtrados = datos.filter(f => {
+                const coincideTexto =
+                    (f.usuario || "").toLowerCase().includes(q) ||
+                    (f.fase || "").toLowerCase().includes(q) ||
+                    (f.resultado || "").toLowerCase().includes(q) ||
+                    (f.parametros || "").toLowerCase().includes(q);
+                const coincideFase = fase === "" || (f.fase || "").toLowerCase().includes(fase);
+                return coincideTexto && coincideFase;
+            });
+
+            renderizar(filtrados);
+        }
+
+        function renderizar(filas) {
+            const tbody = document.getElementById("cuerpo");
+            if (filas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="sin-datos">No hay resultados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filas.map(f => {
+                const fecha = f.timestamp
+                    ? new Date(f.timestamp).toLocaleString('es-ES')
+                    : "Sin fecha";
+                return `<tr>
+                    <td>${fecha}</td>
+                    <td>${f.usuario || "-"}</td>
+                    <td><span class="badge">${f.fase || "-"}</span></td>
+                    <td>${f.parametros || "-"}</td>
+                    <td>${f.resultado || "-"}</td>
+                </tr>`;
+            }).join("");
+        }
+
+        function ordenar(campo) {
+            if (campoOrden === campo) ordenAscendente = !ordenAscendente;
+            else { campoOrden = campo; ordenAscendente = true; }
+
+            datos.sort((a, b) => {
+                const va = (a[campo] || "").toString();
+                const vb = (b[campo] || "").toString();
+                return ordenAscendente ? va.localeCompare(vb) : vb.localeCompare(va);
+            });
+            filtrar();
+        }
+
+        // Cargar al inicio
+        cargar();
+    </script>
+
+</body>
+</html>

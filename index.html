@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>PL2: Visor de Resultados</title>
+    <!-- Lo que hay en el bloque style es nuestro archivo css-->
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: #000000;
-            color: #6d6969;
+            background: #495d6c;
+            color: #fcfcfc;
             min-height: 100vh;
             padding: 30px;
         }
@@ -37,9 +38,9 @@
         }
 
         input, select {
-            background: #1e2130;
-            border: 1px solid #374151;
-            color: #e0e0e0;
+            background: #1c1e2c;
+            border: 1px solid #1e69e1;
+            color: #f6f3f3;
             padding: 8px 14px;
             border-radius: 8px;
             font-size: 0.9rem;
@@ -71,7 +72,7 @@
 
         .stat-card {
             background: #1e2130;
-            border: 1px solid #374151;
+            border: 1px solid #1057c8;
             border-radius: 10px;
             padding: 14px 20px;
             flex: 1;
@@ -82,12 +83,12 @@
         .stat-card .numero {
             font-size: 1.8rem;
             font-weight: bold;
-            color: #60a5fa;
+            color: #eeeff1;
         }
 
         .stat-card .etiqueta {
             font-size: 0.8rem;
-            color: #6b7280;
+            color: #60a5fa;
             margin-top: 4px;
         }
 
@@ -151,7 +152,7 @@
         .actualizar-info {
             text-align: right;
             font-size: 0.78rem;
-            color: #4b5563;
+            color: #edeeef;
             margin-bottom: 10px;
         }
     </style>
@@ -206,6 +207,7 @@
             </tbody>
         </table>
     </div>
+    <!-- Lo que hay en el bloque script es nuestro archivo js-->
 
     <script>
         const API = "https://pl2api-miguel-crfxf2cqd3f3gfa4.spaincentral-01.azurewebsites.net/api/guardar";
@@ -216,7 +218,7 @@
 
         async function cargar() {
             document.getElementById("cuerpo").innerHTML =
-                '<tr><td colspan="5" class="cargando">Cargando...</td></tr>';
+                '<tr><td colspan="5" class="cargando">Cargando, por favor espere </td></tr>';
             try {
                 const res = await fetch(API);
                 datos = await res.json();

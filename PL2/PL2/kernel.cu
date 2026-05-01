@@ -1,8 +1,4 @@
-﻿// PARADIGMAS AVANZADOS DE PROGRAMACION - PL1
-// Manipulacion de datos de vuelos con CUDA
-// Universidad de Alcala - Curso 2025/2026
-
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -19,8 +15,7 @@
 
 // ============================================================
 // FUNCIONES DE ENVIO AL CLOUD
-// Usamos system() + curl (ya viene instalado en Windows 10/11)
-// sin necesidad de librerias externas
+// Como estamos en la máquina virtual y no puedo instalar nada uso system() y curl
 // ============================================================
 void enviar_al_cloud(const char* fase, const char* parametros, const char* resultado) {
     char usuario[100];

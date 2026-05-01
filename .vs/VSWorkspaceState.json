@@ -1,7 +1,9 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\PL2",
+    "\\PL2\\PL2"
   ],
-  "SelectedNode": "\\index.html",
+  "SelectedNode": "\\PL2\\PL2\\kernel.cu",
   "PreviewInSolutionExplorer": false
 }

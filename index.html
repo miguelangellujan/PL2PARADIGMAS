@@ -3,7 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <title>PL2: Visor de Resultados</title>
-    <link rel="stylesheet" href="styles.css">
+
+    <style>
+        /*reseteo antes de empezar a definir el estilo de cada cosa*/
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            padding: 30px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #1a1a2e;
+            margin-bottom: 6px;
+        }
+
+        .subtitulo {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        /* esto es para las tarjetas de las estadísticas */
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 30px;
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+            .stat-card .numero {
+                font-size: 2rem;
+                font-weight: bold;
+                color: #0078d4;
+            }
+
+            .stat-card .etiqueta {
+                font-size: 0.85rem;
+                color: #888;
+                margin-top: 4px;
+            }
+
+        /* para los controles */
+        .controles {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+            .controles input,
+            .controles select {
+                padding: 10px 14px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                font-size: 0.95rem;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+
+            .controles input {
+                flex: 1;
+                min-width: 200px;
+            }
+
+                .controles input:focus,
+                .controles select:focus {
+                    border-color: #0078d4;
+                }
+
+            .controles button {
+                padding: 10px 20px;
+                background: #0078d4;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.95rem;
+                transition: background 0.2s;
+            }
+
+                .controles button:hover {
+                    background: #005fa3;
+                }
+
+        .actualizar-info {
+            font-size: 0.8rem;
+            color: #999;
+            margin-bottom: 16px;
+        }
+
+        /* la tabla grande con los resultados */
+        .tabla-contenedor {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #0078d4;
+            color: white;
+        }
+
+        th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer; /* indica que se puede hacer clic para ordenar */
+            user-select: none;
+            white-space: nowrap;
+        }
+
+            th:hover {
+                background: #005fa3;
+            }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.92rem;
+            vertical-align: middle;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        tbody tr:hover {
+            background: #e8f4fd;
+        }
+
+        .cargando,
+        .sin-datos {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .badge {
+            background: #e8f4fd;
+            color: #0078d4;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 <body>
 
@@ -26,7 +197,9 @@
     </div>
 
     <div class="controles">
-        <input type="text" id="buscar" placeholder="Filtrar por usuario, fase o resultado..." oninput="filtrar()">
+        <input type="text" id="buscar"
+               placeholder="Filtrar por usuario, fase o resultado..."
+               oninput="filtrar()">
         <select id="filtro-fase" onchange="filtrar()">
             <option value="">Todas las fases</option>
             <option value="Fase01">Fase 1 – Despegues</option>
@@ -57,86 +230,138 @@
     </div>
 
     <script>
+        // aquí la url donde van los resultados
         const API = "https://pl2api-miguel-crfxf2cqd3f3gfa4.spaincentral-01.azurewebsites.net/api/guardar";
 
+        // array con los registros que se reciben de la api
         let datos = [];
+        // ponemos el orden en ascendente
         let ordenAscendente = true;
+        // y el campo por el que se ordena
         let campoOrden = 'timestamp';
 
+        // lanzamos la petición get para actualizar las estadítsicas y la tabla
         async function cargar() {
+            // mensaje de cargando...
             document.getElementById("cuerpo").innerHTML =
-                '<tr><td colspan="5" class="cargando">Cargando, por favor espere </td></tr>';
+                '<tr><td colspan="5" class="cargando">Cargando, por favor espere...</td></tr>';
+
             try {
+                // HTTP GET
                 const res = await fetch(API);
+                // la respuesta se parsea como json y se guarda en el array local
                 datos = await res.json();
+
+                // actualización de las tarjetas
                 actualizarStats(datos);
+                // aplicamos los filtros y pintamos la tabla
                 filtrar();
+
+                // almacenamos la hora de actualización
                 const ahora = new Date().toLocaleString('es-ES');
                 document.getElementById("ultima-actualizacion").textContent =
                     "Última actualización: " + ahora;
+
             } catch (e) {
+                // mensaje de error
                 document.getElementById("cuerpo").innerHTML =
                     '<tr><td colspan="5" class="sin-datos">Error al conectar con la API</td></tr>';
             }
         }
 
+        // Esto calcula y muestra el número total de registros, de usuarios y fases distintas 
         function actualizarStats(filas) {
+            // documentos devueltos
             document.getElementById("stat-total").textContent = filas.length;
+
+            // set elimina los duplicados, size devuelve el número de usuarios únicos
             const usuarios = new Set(filas.map(f => f.usuario)).size;
             document.getElementById("stat-usuarios").textContent = usuarios;
+
+            // lo mismo pero para las fases distintas
             const fases = new Set(filas.map(f => f.fase)).size;
             document.getElementById("stat-fases").textContent = fases;
         }
 
+  //esta es para aplicar los filtros del buscador y del selector de fase sobre el array 'datos'
         function filtrar() {
+            // texto del usuario normalizado
             const q = document.getElementById("buscar").value.toLowerCase();
+            // fase seleccionada, vacío significa todas
             const fase = document.getElementById("filtro-fase").value.toLowerCase();
 
+            // se filtra el array original sin modificarlo
             let filtrados = datos.filter(f => {
+                // esto es para buscar coincidencias en cada una las partes posibles 
                 const coincideTexto =
                     (f.usuario || "").toLowerCase().includes(q) ||
                     (f.fase || "").toLowerCase().includes(q) ||
                     (f.resultado || "").toLowerCase().includes(q) ||
                     (f.parametros || "").toLowerCase().includes(q);
+
+                // para la fase si no se ha elegido ninguna se aceptan todas
                 const coincideFase = fase === "" || (f.fase || "").toLowerCase().includes(fase);
+
                 return coincideTexto && coincideFase;
             });
 
+            // ahora que ya está filtrado se puede actualizar la tabla
             renderizar(filtrados);
         }
 
+        // se pintan en el <tbody> las filas correspondientes al array 'filas'
         function renderizar(filas) {
             const tbody = document.getElementById("cuerpo");
+
+            // esto es por si no hay resultados, a modo de mensaje
             if (filas.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="sin-datos">No hay resultados</td></tr>';
                 return;
             }
+
+            // se construye el html de la tabla concatenando las filas
             tbody.innerHTML = filas.map(f => {
+                // el timestramp lo convertimos a fecha normal, y si no hay ponemos Sin fecha
                 const fecha = f.timestamp
                     ? new Date(f.timestamp).toLocaleString('es-ES')
                     : "Sin fecha";
+
+                // se usa || "-" para no poner undefined si algún campo viene vacío
                 return `<tr>
-                        <td>${fecha}</td>
-                        <td>${f.usuario || "-"}</td>
-                        <td><span class="badge">${f.fase || "-"}</span></td>
-                        <td>${f.parametros || "-"}</td>
-                        <td>${f.resultado || "-"}</td>
-                    </tr>`;
-            }).join("");
+                            <td>${fecha}</td>
+                            <td>${f.usuario || "-"}</td>
+                            <td><span class="badge">${f.fase || "-"}</span></td>
+                            <td>${f.parametros || "-"}</td>
+                            <td>${f.resultado || "-"}</td>
+                        </tr>`;
+            }).join(""); // join une las filas en un string HTML
         }
 
+        // esta función cambia el orden del array 'datos' por el campo indicado
+        // si se pincha dos veces sobre la misma columna se invierte el orden
         function ordenar(campo) {
-            if (campoOrden === campo) ordenAscendente = !ordenAscendente;
-            else { campoOrden = campo; ordenAscendente = true; }
+            // si el campo es el mismo que ya había, se invierte el sentido
+            if (campoOrden === campo) {
+                ordenAscendente = !ordenAscendente;
+            } else {
+                // si se ha seleccionado columna nueva, se pone en ascendete sobre esa
+                campoOrden = campo;
+                ordenAscendente = true;
+            }
 
+            // se ordena el array 'datos'
             datos.sort((a, b) => {
                 const va = (a[campo] || "").toString();
                 const vb = (b[campo] || "").toString();
+                // localeCompare es para hacer comparación alfabética sin que de error por acentos
                 return ordenAscendente ? va.localeCompare(vb) : vb.localeCompare(va);
             });
+
+            // se reordena, se aplican los filtros y se vuelve a pintar
             filtrar();
         }
 
+        // cargar al abrir la página para seleccionar los datos iniciales
         cargar();
     </script>
 

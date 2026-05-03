@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <algorithm>
 
-// URL de la Azure Function
+//Url de azure donde se guardan los resultados
 #define URL_CLOUD "https://pl2api-miguel-crfxf2cqd3f3gfa4.spaincentral-01.azurewebsites.net/api/guardar"
 
 // ============================================================
@@ -27,6 +27,12 @@ void enviar_al_cloud(const char* fase, const char* parametros, const char* resul
     char timestamp[30];
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%S", localtime(&ahora));
 
+    // Esto de aquí es el comando curl 
+    // se construye el post con el JSON 
+    // -s sirve para que no se muestre la salida del progreso de cómo va la función
+    // -X POST sirve para indicar que es una petición post
+    // -H hace falta ponerlo para que la función entienda el json, si lo quitas no funciona
+    // -o NUL es para quitar la respuesta del servidor que no la vamos a usar
     char cmd[2048];
     snprintf(cmd, sizeof(cmd),
         "curl -s -X POST \"%s\" "
@@ -39,6 +45,7 @@ void enviar_al_cloud(const char* fase, const char* parametros, const char* resul
         "\\\"timestamp\\\":\\\"%s\\\"}\"",
         URL_CLOUD, fase, usuario, parametros, resultado, timestamp);
 
+    // esto escribe el curl en la terminal, si da 0 es que ha funcionado
     int ret = system(cmd);
     if (ret == 0)
         printf("[\nDatos enviados correctamente.\n");

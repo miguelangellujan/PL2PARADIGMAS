@@ -48,9 +48,9 @@ void enviar_al_cloud(const char* fase, const char* parametros, const char* resul
     // esto escribe el curl en la terminal, si da 0 es que ha funcionado
     int ret = system(cmd);
     if (ret == 0)
-        printf("[\nDatos enviados correctamente.\n");
+        printf("\nDatos enviados correctamente.\n");
     else
-        printf("[\nError al enviar los datos.\n");
+        printf("\nError al enviar los datos.\n");
 }
 
 void preguntar_envio_cloud(const char* fase, const char* parametros, const char* resultado) {
